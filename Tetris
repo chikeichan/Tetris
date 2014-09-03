@@ -1,0 +1,790 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tetris</title>
+    <style>
+      td {
+        text-align:center;
+        height: 20px;
+        width: 10px;
+        border: 1px solid black;
+      }
+      th{
+        border: 1px solid black;
+      }
+      
+      div{
+        height:50px;
+        width:80px;
+        border-radius: 15px;
+        text-align:center;
+        background-color:#0033CC;
+        vertical-align:middle;
+        position: relative;
+        display:inline-block;
+        }
+      
+    </style>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script>
+      var mark = "&#x25a0";
+      var dmark = '<font color="grey">&#x25a0</font>';
+      var testrow = [[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,6],[5,7],[5,8],[5,9],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[4,5],[6,5]]
+      var tetris = {};
+      var rate = 200;
+      
+      //hold coordinates of current shap
+      tetris.current = [[],[],[],[]];
+      tetris.curShape = '';
+      
+      //return coordinates of Long shape
+      tetris.LNG = function (arr) {
+        var x = arr[0];
+        var y = arr[1];
+        
+        return [[x,y],[x-1,y],[x-2,y],[x+1,y]];
+          
+      }
+      
+      //return coordinates of L shape
+      tetris.L = function (arr) {
+        var x = arr[0];
+        var y = arr[1];
+        
+        return [[x,y],[x-1,y],[x+1,y],[x+1,y+1]];
+          
+      }
+      
+      //return coordinates of reversed L shape
+      tetris.RL = function (arr) {
+        var x = arr[0];
+        var y = arr[1];
+        
+        return [[x,y],[x-1,y],[x+1,y],[x+1,y-1]];
+          
+      }
+      
+      //return coordinates of square shape
+      tetris.SQR = function (arr) {
+        var x = arr[0];
+        var y = arr[1];
+        
+        return [[x,y],[x-1,y],[x-1,y+1],[x,y+1]];
+          
+      }
+      
+      //return coordinates of T shape
+      tetris.T = function (arr) {
+        var x = arr[0];
+        var y = arr[1];
+        
+        return [[x,y],[x+1,y],[x,y-1],[x,y+1]];
+          
+      }
+      
+      //return coordinates of S shape
+      tetris.S = function (arr) {
+        var x = arr[0];
+        var y = arr[1];
+        
+        return [[x,y],[x-1,y],[x,y+1],[x+1,y+1]];
+          
+      }
+      
+      //return coordinates of reversed S shape
+      tetris.RS = function (arr) {
+        var x = arr[0];
+        var y = arr[1];
+        
+        return [[x,y],[x,y+1],[x-1,y+1],[x+1,y]];
+          
+      }
+      
+      //plot an array of coordinates to map
+      tetris.plotShape = function (arr,str) {
+        for (z=0;z<arr.length;z++){
+          var x = arr[z][0];
+          var y = arr[z][1];
+          var coor = "#"+x+"x>#"+y+"c";
+          $(coor).html(str);
+        }
+      }
+      
+      //generate random shape
+      tetris.generate = function () {
+        var prob = Math.floor(Math.random()*7+1);
+        var starting = [-4,4]
+        switch (prob) {
+          case 1:
+            tetris.current = tetris.LNG(starting);
+            tetris.curShape = 'LNG'
+            break;
+          case 2:
+            tetris.current = tetris.L(starting);
+            tetris.curShape = 'L'
+            break;
+          case 3:
+            tetris.current = tetris.T(starting);
+            tetris.curShape = 'T'
+            break;
+          case 4:
+            tetris.current = tetris.SQR(starting);
+            tetris.curShape = 'SQR'
+            break;
+          case 5:
+            tetris.current = tetris.S(starting);
+            tetris.curShape = 'S'
+            break;
+          case 6:
+            tetris.current = tetris.RS(starting);
+            tetris.curShape = 'RS'
+            break;
+          case 6:
+            tetris.current = tetris.RL(starting);
+            tetris.curShape = 'RL'
+            break;
+        }
+       
+      }
+      
+      //rotate current Shape
+      
+      tetris.rotate= function() {
+        var x = tetris.current[0][0]
+        var y = tetris.current[0][1]
+        
+        if (y==0) {
+            y=1;
+        } else if (y==9&&tetris.curShape=='LNG') {
+            y=7
+        } else if (y==9) {
+            y=8
+        }
+          
+       
+        
+        var LNG = tetris.LNG([x,y])
+        var LNG1 = [[x,y],[x,y-1],[x,y+1],[x,y+2]]
+        
+        var S = tetris.S([x,y])
+        var S1 = [[x,y],[x,y+1],[x+1,y],[x+1,y-1]]
+        
+        var RS = tetris.RS([x,y])
+        var RS1 = [[x,y],[x,y-1],[x+1,y],[x+1,y+1]]
+        
+        var T = tetris.T([x,y])
+        var T1 = [[x,y],[x-1,y],[x+1,y],[x,y-1]]
+        var T2 = [[x,y],[x-1,y],[x,y+1],[x,y-1]]
+        var T3 = [[x,y],[x-1,y],[x+1,y],[x,y+1]]  
+        
+        var L = tetris.L([x,y])
+        var L1 = [[x,y],[x,y+1],[x+1,y-1],[x,y-1]]
+        var L2 = [[x,y],[x+1,y],[x-1,y],[x-1,y-1]]
+        var L3 = [[x,y],[x,y+1],[x,y-1],[x-1,y+1]]
+        
+        var RL = tetris.RL([x,y])
+        var RL1 = [[x,y],[x,y+1],[x,y-1],[x-1,y-1]]
+        var RL2 = [[x,y],[x+1,y],[x-1,y],[x-1,y+1]]
+        var RL3 = [[x,y],[x,y+1],[x,y-1],[x+1,y+1]] 
+        
+        
+        
+        switch (tetris.curShape) {
+            case 'L':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(L1,mark)
+            tetris.current = L1;
+            tetris.curShape = 'L1';
+            break;
+            case 'L1':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(L2,mark)
+            tetris.current = L2;
+            tetris.curShape = 'L2';
+            break;
+            case 'L2':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(L3,mark)
+            tetris.current = L3;
+            tetris.curShape = 'L3';
+            break;
+            case 'L3':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(L,mark)
+            tetris.current = L;
+            tetris.curShape = 'L';
+            break;
+            case 'RL':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(RL1,mark)
+            tetris.current = RL1;
+            tetris.curShape = 'RL1';
+            break;
+            case 'RL1':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(RL2,mark)
+            tetris.current = RL2;
+            tetris.curShape = 'RL2';
+            break;
+            case 'RL2':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(RL3,mark)
+            tetris.current = RL3;
+            tetris.curShape = 'RL3';
+            break;
+            case 'RL3':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(RL,mark)
+            tetris.current = RL;
+            tetris.curShape = 'RL';
+            break;
+            case 'T':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(T1,mark)
+            tetris.current = T1;
+            tetris.curShape = 'T1';
+            break;
+            case 'T1':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(T2,mark)
+            tetris.current = T2;
+            tetris.curShape = 'T2';
+            break;
+            case 'T2':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(T3,mark)
+            tetris.current = T3;
+            tetris.curShape = 'T3';
+            break;
+            case 'T3':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(T,mark)
+            tetris.current = T;
+            tetris.curShape = 'T';
+            break;
+            case 'LNG':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(LNG1,mark)
+            tetris.current =LNG1;
+            tetris.curShape = 'LNG1';
+            break;
+            case 'LNG1':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(LNG,mark)
+            tetris.current = LNG;
+            tetris.curShape = 'LNG';
+            break;
+            case 'S':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(S1,mark)
+            tetris.current = S1;
+            tetris.curShape = 'S1';
+            break;
+            case 'S1':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(S,mark)
+            tetris.current = S;
+            tetris.curShape = 'S';
+            break;
+            case 'RS':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(RS1,mark)
+            tetris.current = RS1;
+            tetris.curShape = 'RS1';
+            break;
+            case 'RS1':
+            tetris.plotShape(tetris.current,'')
+            tetris.plotShape(RS,mark)
+            tetris.current = RS;
+            tetris.curShape = 'RS';
+            break;
+        }
+      }
+        
+      
+      //move current piece to Right
+      tetris.moveRight = function(arr){
+        var end = [[],[],[],[]];
+        var stop = false;
+        
+        for (i=0;i<arr.length;i++) {
+            end[i].push(arr[i][0]);
+            end[i].push(arr[i][1]+1);
+          if(arr[i][1]>8) {
+            stop = true;
+          }
+        }
+        
+        for(j=0;j<end.length;j++){
+            var x = end[j][0];
+            var y = end[j][1];
+            var coor = "#"+x+"x>#"+y+"c";
+                
+          if(typeof $(coor).html() == "string") {
+            value = $(coor).html().slice(1,5);
+          }
+          
+          if(value=="font"){
+            stop = true;
+          }
+        }
+        
+        if (!stop) {
+            tetris.plotShape(arr,"");
+            tetris.plotShape(end,mark);
+        
+            tetris.current = end;
+        }
+        
+        
+      }
+      
+      //move current piece to Left
+      tetris.moveLeft = function(arr){
+        var end = [[],[],[],[]];
+        var stop = false;
+        
+        for (i=0;i<arr.length;i++) {
+            end[i].push(arr[i][0]);
+            end[i].push(arr[i][1]-1);
+          if(arr[i][1]<1) {
+            stop = true;
+          }
+        }
+        
+        for(j=0;j<end.length;j++){
+            var x = end[j][0];
+            var y = end[j][1];
+            var coor = "#"+x+"x>#"+y+"c";
+                
+          if(typeof $(coor).html() == "string") {
+            value = $(coor).html().slice(1,5);
+          }
+          
+          if(value=="font"){
+            stop = true;
+          }
+        }
+        
+        if (!stop) {
+            tetris.plotShape(arr,"");
+            tetris.plotShape(end,mark);
+        
+            tetris.current = end;
+        }
+        
+        
+      }
+      
+      //erase row when complete
+      tetris.fullRow = function() {
+        var emptyrow = [];
+        
+        for(i=0;i<21;i++) {
+          var count = 0;
+          
+          var fullmap = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]];
+          
+          for(j=0;j<10;j++) {
+            var coor = "#"+i+"x>#"+j+"c";
+            
+            fullmap[i].push($(coor).html());
+            
+            if($(coor).html()!=''){
+              count++;
+            }
+            if(count==10){
+              var frow = [[i,0],[i,1],[i,2],[i,3],[i,4],[i,5],[i,6],[i,7],[i,8],[i,9]]
+              emptyrow.push(i);
+              tetris.plotShape(frow,"");
+              
+            }
+          }
+        }
+        
+       
+        
+        
+        setTimeout(function(){
+        for (k=0;k<emptyrow.length;k++) {
+          tetris.moveRowDown(0,emptyrow[k]-1);
+        }
+        },200);
+        
+        
+      }
+      
+      //move row within range down
+      tetris.moveRowDown = function (row,end) {
+        var data = [];
+        for(x=end;x>=row;x--) {
+          for (j=0;j<10;j++) {
+            var coor = "#"+x+"x>#"+j+"c";
+            var newcoor = "#"+(x+1)+"x>#"+j+"c";
+          
+            $(newcoor).html($(coor).html());
+            $(coor).html('');
+          }
+        }
+        
+        
+      }
+      
+     
+      
+      
+      
+      
+      //executing testris.fall continously in 1 second interval
+      tetris.falling = setInterval(function(){
+        tetris.fall(tetris.current);
+      },rate);
+      
+      //function for dropping current shape by one 
+      tetris.fall = function (arr) {
+        var end = [[],[],[],[]];
+        var stop = false;
+        var value = " ";
+        
+        for(i=0;i<arr.length;i++){
+            end[i].push(arr[i][0]+1);
+            end[i].push(arr[i][1]);
+            if (arr[i][0]>19) {
+                stop = true;
+            } 
+        }
+        
+        for(j=0;j<end.length;j++){
+            var x = end[j][0];
+            var y = end[j][1];
+            var coor = "#"+x+"x>#"+y+"c";
+                
+          if(typeof $(coor).html() == "string") {
+            value = $(coor).html().slice(1,5);
+          }
+          
+          if(value=="font"){
+            stop = true;
+          }
+        }
+        
+        
+        
+        if(!stop) {
+            tetris.plotShape(arr,"");
+            tetris.plotShape(end,mark);
+        
+            tetris.current = end;
+        } else {
+            tetris.plotShape(tetris.current,dmark);
+            tetris.fullRow();
+            tetris.generate();
+        }
+        
+      }
+      
+      
+      //execute movement when arrow key is pressed
+      $(document).ready(function(){
+        $("body").keydown(function(e){
+        // left arrow
+            if ((e.keyCode || e.which) == 37){   
+              tetris.moveLeft(tetris.current);
+            }
+        // right arrow
+            if ((e.keyCode || e.which) == 39){
+                tetris.moveRight(tetris.current);
+            }
+        
+        // down arrow
+            if ((e.keyCode || e.which) == 40){
+                tetris.fall(tetris.current);
+            }
+          // UP arrow
+            if ((e.keyCode || e.which) == 38){
+                tetris.rotate();
+            }
+         
+        })
+      });
+      
+      
+    </script>
+  </head>
+  <body>    
+     
+    <div align="center"><p onclick="tetris.generate()"><font size="3px" color="white">Start!</font></p></div>
+    <!--
+    <div align="center" top-margin="-10px"><p onclick=""><font size="3px" color="white">Randomize</font></p></div>
+    <div align="center" top-margin="-10px"><p onclick=""><font size="3px" color="white">Try AI!</font></p></div>
+    -->
+    <p id='point'></p>
+    <table border="0" style="width:250px" bgcolor="">
+      <tr id='0x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='1x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='2x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='3x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='4x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='5x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='6x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='7x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='8x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='9x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='10x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='11x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='12x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='13x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='14x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='15x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='16x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='17x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='18x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='19x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      <tr id='20x'>
+        <td id='0c'></td>
+        <td id='1c'></td>
+        <td id='2c'></td>
+        <td id='3c'></td>
+        <td id='4c'></td>
+        <td id='5c'></td>
+        <td id='6c'></td>
+        <td id='7c'></td>
+        <td id='8c'></td>
+        <td id='9c'></td>
+      </tr>
+      
+    </table>
+    
+    
+    <script>
+      
+        
+        
+      
+    </script>
+   
+    
+  </body>
+</html>
