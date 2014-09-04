@@ -9,35 +9,38 @@
         text-align:center;
         height: 20px;
         width: 10px;
-        border: 1px solid black;
+        border: 1px solid grey;
+        background-color: white;
       }
       th{
         border: 1px solid black;
       }
       
       div{
-        height:50px;
-        width:80px;
-        border-radius: 15px;
+        border-radius: 2px;
         text-align:center;
-        background-color:#0033CC;
+        border: 1px solid grey;
         vertical-align:middle;
         position: relative;
         display:inline-block;
+        float: left;
         }
       
     </style>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script>
       var mark = "&#x25a0";
-      var dmark = '<font color="grey">&#x25a0</font>';
+      var dmark = '<font color="black">&#x25a0</font>';
+      var pmark = '<font color="Orange">&#x25a0</font>';
       var testrow = [[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,6],[5,7],[5,8],[5,9],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[4,5],[6,5]]
       var tetris = {};
-      var rate = 200;
       
       //hold coordinates of current shap
       tetris.current = [[],[],[],[]];
+      tetris.nextShape = [[],[],[],[]];
       tetris.curShape = '';
+      tetris.nextProb = Math.floor(Math.random()*7+1);
+      tetris.points = 0;
       
       //return coordinates of Long shape
       tetris.LNG = function (arr) {
@@ -112,11 +115,23 @@
         }
       }
       
-      //generate random shape
+      //plot an array of coordinates to map
+      tetris.plotNext = function (arr,str) {
+        for (z=0;z<arr.length;z++){
+          var x = arr[z][0];
+          var y = arr[z][1];
+          var coor = "#"+x+"xx>#"+y+"c";
+          $(coor).html(str);
+        }
+      }
+      
+      
+      //generate random shape and preview next random shape
       tetris.generate = function () {
-        var prob = Math.floor(Math.random()*7+1);
+        
         var starting = [-4,4]
-        switch (prob) {
+        var nextpos = [2,1]
+        switch (tetris.nextProb) {
           case 1:
             tetris.current = tetris.LNG(starting);
             tetris.curShape = 'LNG'
@@ -146,22 +161,88 @@
             tetris.curShape = 'RL'
             break;
         }
+        
+       tetris.nextProb = Math.floor(Math.random()*7+1);
        
+       //plot next shape in preview area 
+        switch (tetris.nextProb) {
+          case 1:
+            tetris.plotNext(tetris.nextShape,'');
+            tetris.plotNext(tetris.LNG(nextpos),pmark);
+            tetris.nextShape = tetris.LNG(nextpos);
+            break;
+          case 2:
+            tetris.plotNext(tetris.nextShape,'');
+            tetris.plotNext(tetris.L(nextpos),pmark);
+            tetris.nextShape = tetris.L(nextpos);
+            break;
+          case 3:
+            tetris.plotNext(tetris.nextShape,'');
+            tetris.plotNext(tetris.T(nextpos),pmark);
+            tetris.nextShape = tetris.T(nextpos);
+            
+            break;
+          case 4:
+            tetris.plotNext(tetris.nextShape,'');
+            tetris.plotNext(tetris.SQR(nextpos),pmark);
+            tetris.nextShape = tetris.SQR(nextpos);
+            
+            break;
+          case 5:
+            tetris.plotNext(tetris.nextShape,'');
+            tetris.plotNext(tetris.S(nextpos),pmark);
+            tetris.nextShape = tetris.S(nextpos);
+            
+            break;
+          case 6:
+            tetris.plotNext(tetris.nextShape,'');
+            tetris.plotNext(tetris.RS(nextpos),pmark);
+            tetris.nextShape = tetris.RS(nextpos);
+            
+            break;
+          case 6:
+            tetris.plotNext(tetris.nextShape,'');
+            tetris.plotNext(tetris.RL(nextpos),pmark);
+            tetris.nextShape = tetris.RL(nextpos);
+            
+            break;
+        }
       }
       
-      //rotate current Shape
+      //If rotate to existing pieces, do not move
+      tetris.rotatefix = function(arr) {
+        var stop = false;
+        for(i=0;i<arr.length;i++){
+            var x = arr[i][0]
+            var y = arr[i][1]
+            var coor = "#"+x+"x>#"+y+"c";
+          
+          if(typeof $(coor).html() == "string") {
+            value = $(coor).html().slice(1,5);
+          }
+          
+          if(value=="font"){
+            stop = true;
+          }
+        }
+        return stop;
+      }
       
+      
+      //rotate current Shape
       tetris.rotate= function() {
         var x = tetris.current[0][0]
         var y = tetris.current[0][1]
         
         if (y==0) {
             y=1;
-        } else if (y==9&&tetris.curShape=='LNG') {
+        } else if (y>=8&&tetris.curShape=='LNG'||tetris.curShape=="LNG2") {
             y=7
-        } else if (y==9) {
+        } else if (y>=9) {
             y=8
         }
+        
+        
           
        
         
@@ -189,8 +270,67 @@
         var RL2 = [[x,y],[x+1,y],[x-1,y],[x-1,y+1]]
         var RL3 = [[x,y],[x,y+1],[x,y-1],[x+1,y+1]] 
         
+        var end;
         
-        
+        switch (tetris.curShape) {
+            case 'L':
+            end = L1;
+            break;
+            case 'L1':
+            end = L2;
+            break;
+            case 'L2':
+            end = L3;
+            break;
+            case 'L3':
+            end = L;
+            break;
+            case 'RL':
+            end = RL1;
+            break;
+            case 'RL1':
+            end = RL2;
+            break;
+            case 'RL2':
+            end = RL3;
+            break;
+            case 'RL3':
+            end = RL;
+            break;
+            case 'T':
+            end = T1;
+            break;
+            case 'T1':
+            end = T2;
+            break;
+            case 'T2':
+            end = T3;
+            break;
+            case 'T3':
+            end = T;
+            break;
+            case 'LNG':
+            end = LNG1;
+            break;
+            case 'LNG1':
+            end = LNG;
+            break;
+            case 'S':
+            end = S1;
+            break;
+            case 'S1':
+            end = S;
+            break;
+            case 'RS':
+            end = RS1;
+            break;
+            case 'RS1':
+            end = RS;
+            break;
+        }
+          
+          if(!tetris.rotatefix(end)) {
+           
         switch (tetris.curShape) {
             case 'L':
             tetris.plotShape(tetris.current,'')
@@ -300,6 +440,8 @@
             tetris.current = RS;
             tetris.curShape = 'RS';
             break;
+        
+          }
         }
       }
         
@@ -413,6 +555,9 @@
         }
         },200);
         
+        tetris.points += (10*emptyrow.length)*((emptyrow.length/2)+0.5)
+        document.getElementById('point').innerHTML = '';
+        document.getElementById('point').innerHTML = tetris.points;
         
       }
       
@@ -432,15 +577,15 @@
         
       }
       
-     
-      
-      
-      
       
       //executing testris.fall continously in 1 second interval
-      tetris.falling = setInterval(function(){
+      tetris.initialize = function(rate) {
+        tetris.generate();
+        tetris.falling = setInterval(function(){
         tetris.fall(tetris.current);
+        console.log("falling");
       },rate);
+      }
       
       //function for dropping current shape by one 
       tetris.fall = function (arr) {
@@ -477,14 +622,37 @@
             tetris.plotShape(end,mark);
         
             tetris.current = end;
-        } else {
+        } else {    
             tetris.plotShape(tetris.current,dmark);
             tetris.fullRow();
             tetris.generate();
+            tetris.gameover();
         }
         
       }
       
+      //display gameover message
+      tetris.gameover = function() {
+        var gameover=false;
+        
+          for(j=0;j<10;j++){
+            var coor = "#0x>#"+j+"c";
+            if(typeof $(coor).html() == "string") {
+            value = $(coor).html().slice(1,5);
+          }
+          
+          if(value=="font"){
+            gameover = true;
+          } 
+        }
+       
+        console.log(gameover);
+        if(gameover) {
+            $("body").append('<div id="gameover" style="margin: -400px -500px 0px 170px; height: 150px; color=grey; width: 250px; background-color:white; border: 1px dashed red"><font size="15" color="red"><p style="margin:14px 0px 0px 0px">GAME OVER</p></font></div>');
+            clearInterval(tetris.falling);
+        }
+       
+      }
       
       //execute movement when arrow key is pressed
       $(document).ready(function(){
@@ -514,13 +682,53 @@
     </script>
   </head>
   <body>    
+    
+    
+    <div onclick="tetris.initialize(500)" style="margin: 2px 5px 0px 0px; height: 20px; color=grey; width: 50px;background-color: yellow;"><font size="3" color="black">Easy</font></div>
+    <div onclick="tetris.initialize(200)" style="margin: 2px 5px 0px 0px; height: 20px; color=grey; width: 50px;background-color:orange;"><font size="3" color="black">Medium</font></div>
+    <div onclick="tetris.initialize(50)" style="margin: 2px 5px 0px 0px; height: 20px; color=grey; width: 50px;background-color:red;"><font size="3" color="black">Hard</font></div>
+    <div style="margin: 35px 5px 0px -171px; height: 200px; color=grey; width: 164px;">
+      <font color="grey">------------------------<br>NEXT BLOCK<br>
+      ------------------------</font>
+      <table style="width:75px;margin: 0px 0px 0px 45px;border:0px solid white">
+        <tr id='0xx'>
+            <td id='0c'></td>
+            <td id='1c'></td>
+            <td id='2c'></td>
+        </tr>
+        <tr id='1xx'>
+            <td id='0c'></td>
+            <td id='1c'></td>
+            <td id='2c'></td>
+        </tr>
+        <tr id='2xx'>
+            <td id='0c'></td>
+            <td id='1c'></td>
+            <td id='2c'></td>
+        </tr>
+        <tr id='3xx'>
+            <td id='0c'></td>
+            <td id='1c'></td>
+            <td id='2c'></td>
+        </tr>
+        </table>
+    </div>
+    <div style="margin: 250px 5px 0px -171px; height: 294px; color=grey; width: 164px;">
+    <font color="grey" alight="center">------------------------<br>POINTS<br>
+      ------------------------<p id="point">0</p>
      
-    <div align="center"><p onclick="tetris.generate()"><font size="3px" color="white">Start!</font></p></div>
-    <!--
-    <div align="center" top-margin="-10px"><p onclick=""><font size="3px" color="white">Randomize</font></p></div>
-    <div align="center" top-margin="-10px"><p onclick=""><font size="3px" color="white">Try AI!</font></p></div>
-    -->
-    <p id='point'></p>
+        1 row  : 10 points<br>
+        2 rows : 30 points<br>
+        3 rows : 60 points<br>
+        4 rows : 100 points<br>
+      <br>
+      <font size = 2>
+      LEFT/RIGHT: Move Sideway<br>
+      DOWN: Accelerate<br>
+      Up: Rotate Clockwise<br>
+      </font>
+      </font>
+    </div>
     <table border="0" style="width:250px" bgcolor="">
       <tr id='0x'>
         <td id='0c'></td>
@@ -774,6 +982,8 @@
         <td id='8c'></td>
         <td id='9c'></td>
       </tr>
+      
+      
       
     </table>
     
